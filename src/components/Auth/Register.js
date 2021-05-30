@@ -78,6 +78,18 @@ const Register = () => {
     });
   };
 
+  const resetForm = () => {
+    setState({
+      ...state,
+      username: "",
+      email: "",
+      password: "",
+      passwordConfirmation: "",
+      errors: [],
+      loading: false,
+    });
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (isFormValid()) {
@@ -99,6 +111,7 @@ const Register = () => {
                 .then(() => {
                   console.log("user saved");
                   setState({ ...state, loading: false });
+                  resetForm();
                 })
                 .catch((err) => {
                   console.log(err);
