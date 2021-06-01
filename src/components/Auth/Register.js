@@ -98,7 +98,6 @@ const Register = () => {
         .auth()
         .createUserWithEmailAndPassword(state.email, state.password)
         .then((createdUser) => {
-          console.log(createdUser);
           createdUser.user
             .updateProfile({
               displayName: state.username,
@@ -114,7 +113,6 @@ const Register = () => {
                   resetForm();
                 })
                 .catch((err) => {
-                  console.log(err);
                   setState({
                     ...state,
                     errors: state.errors.concat(err),
@@ -123,7 +121,6 @@ const Register = () => {
                 });
             })
             .catch((err) => {
-              console.log(err);
               setState({
                 ...state,
                 errors: state.errors.concat(err),
@@ -132,7 +129,6 @@ const Register = () => {
             });
         })
         .catch((err) => {
-          console.log(err);
           setState({
             ...state,
             errors: state.errors.concat(err),
@@ -144,7 +140,7 @@ const Register = () => {
   return (
     <Grid textAlign="center" verticalAlign="middle" className="app">
       <Grid.Column style={{ maxWidth: 450 }}>
-        <Header as="h2" icon color="orange" textAlign="center">
+        <Header as="h1" icon color="orange" textAlign="center">
           <Icon name="cogs" color="orange" />
           Register for DevChat
         </Header>
