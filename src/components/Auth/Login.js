@@ -53,10 +53,8 @@ const Login = () => {
         .auth()
         .signInWithEmailAndPassword(state.email, state.password)
         .then((signedInUser) => {
-          setState({
-            ...state,
-            loading: false,
-          });
+          console.log("user logged in");
+          resetForm();
         })
         .catch((err) => {
           console.log(err);
