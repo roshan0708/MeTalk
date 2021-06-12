@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Header, Segment, Input, Icon } from "semantic-ui-react";
 
 const MessagesHeader = () => {

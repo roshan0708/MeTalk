@@ -1,100 +1,184 @@
-import React, { useState } from "react";
+import React from "react";
+import {v4 as uuidv4} from "uuid";
 import firebase from "../../firebase";
 import { Segment, Button, Input } from "semantic-ui-react";
 
-const MessageForm = ({ messagesRef, currentChannel, currentUser }) => {
-  const [messageData, setMessageData] = useState({
+import FileModal from "./FileModal";
+
+class MessageForm extends React.Component {
+  state = {
+    storageRef: firebase.storage().ref(),
+    uploadTask: null,
+    uploadState: "",
+    percentUploaded: 0,
     message: "",
+    channel: this.props.currentChannel,
+    user: this.props.currentUser,
     loading: false,
     errors: [],
-  });
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setMessageData({ ...messageData, [name]: value });
+    modal: false,
   };
 
-  const createMessage = () => {
+  openModal = () => this.setState({ modal: true });
+
+  closeModal = () => this.setState({ modal: false });
+
+  handleChange = (event) => {
+    this.setState({ [event.target.name]: event.target.value });
+  };
+
+  createMessage = (fileUrl = null) => {
     const message = {
       timestamp: firebase.database.ServerValue.TIMESTAMP,
-      content: messageData.message,
       user: {
-        id: currentUser.uid,
-        name: currentUser.displayName,
-        avatar: currentUser.photoURL,
+        id: this.state.user.uid,
+        name: this.state.user.displayName,
+        avatar: this.state.user.photoURL,
       },
     };
-
+    if (fileUrl !== null) {
+      message["image"] = fileUrl;
+    } else {
+      message["content"] = this.state.message;
+    }
     return message;
   };
 
-  const sendMessage = () => {
-    const { message } = messageData;
+  sendMessage = () => {
+    const { messagesRef } = this.props;
+    const { message, channel } = this.state;
+
     if (message) {
-      setMessageData({ ...messageData, loading: true });
+      this.setState({ loading: true });
       messagesRef
-        .child(currentChannel.id)
+        .child(channel.id)
         .push()
-        .set(createMessage())
+        .set(this.createMessage())
         .then(() => {
-          setMessageData({
-            ...messageData,
-            loading: false,
-            message: "",
-            errors: [],
-          });
+          this.setState({ loading: false, message: "", errors: [] });
         })
         .catch((err) => {
           console.error(err);
-
-          setMessageData({
-            ...messageData,
+          this.setState({
             loading: false,
-            errors: messageData.errors.concat(err),
+            errors: this.state.errors.concat(err),
           });
         });
     } else {
-      setMessageData({
-        ...messageData,
-        errors: messageData.errors.concat({ message: "Add a message" }),
+      this.setState({
+        errors: this.state.errors.concat({ message: "Add a message" }),
       });
     }
   };
-  return (
-    <Segment className="messag__form">
-      <Input
-        fluid
-        name="message"
-        onChange={handleChange}
-        value={messageData.message}
-        style={{ marginBottom: "0.7em" }}
-        label={<Button icon="add" />}
-        labelPosition="left"
-        placeholder="Write your message"
-        className={
-          messageData.errors.some((error) => error.message.includes("message"))
-            ? "error"
-            : ""
-        }
-      />
-      <Button.Group icon widths="2">
-        <Button
-          onClick={sendMessage}
-          disabled={messageData.loading}
-          color="orange"
-          content="Add Reply"
+
+  uploadFile = (file, metadata) => {
+    const pathToUpload = this.state.channel.id;
+    const ref = this.props.messagesRef;
+    const filePath = `chat/public/${uuidv4()}.jpg`;
+
+    this.setState(
+      {
+        uploadState: "uploading",
+        uploadTask: this.state.storageRef.child(filePath).put(file, metadata),
+      },
+      () => {
+        this.state.uploadTask.on(
+          "state_changed",
+          (snap) => {
+            const percentUploaded = Math.round(
+              (snap.bytesTransferred / snap.totalBytes) * 100
+            );
+            this.setState({ percentUploaded });
+          },
+          (err) => {
+            console.error(err);
+            this.setState({
+              errors: this.state.errors.concat(err),
+              uploadState: "error",
+              uploadTask: null,
+            });
+          },
+          () => {
+            this.state.uploadTask.snapshot.ref
+              .getDownloadURL()
+              .then((downloadUrl) => {
+                this.sendFileMessage(downloadUrl, ref, pathToUpload);
+              })
+              .catch((err) => {
+                console.error(err);
+                this.setState({
+                  errors: this.state.errors.concat(err),
+                  uploadState: "error",
+                  uploadTask: null,
+                });
+              });
+          }
+        );
+      }
+    );
+  };
+
+  sendFileMessage = (fileUrl, ref, pathToUpload) => {
+    ref
+      .child(pathToUpload)
+      .push()
+      .set(this.createMessage(fileUrl))
+      .then(() => {
+        this.setState({ uploadState: "done" });
+      })
+      .catch((err) => {
+        console.error(err);
+        this.setState({
+          errors: this.state.errors.concat(err),
+        });
+      });
+  };
+
+  render() {
+    const { errors, message, loading, modal } = this.state;
+
+    return (
+      <Segment className="message__form">
+        <Input
+          fluid
+          name="message"
+          onChange={this.handleChange}
+          value={message}
+          style={{ marginBottom: "0.7em" }}
+          label={<Button icon={"add"} />}
           labelPosition="left"
-          icon="edit"
+          className={
+            errors.some((error) => error.message.includes("message"))
+              ? "error"
+              : ""
+          }
+          placeholder="Write your message"
         />
-        <Button
-          color="teal"
-          content="Upload Media"
-          labelPosition="right"
-          icon="cloud upload"
-        />
-      </Button.Group>
-    </Segment>
-  );
-};
+        <Button.Group icon widths="2">
+          <Button
+            onClick={this.sendMessage}
+            disabled={loading}
+            color="orange"
+            content="Add Reply"
+            labelPosition="left"
+            icon="edit"
+          />
+          <Button
+            color="teal"
+            onClick={this.openModal}
+            content="Upload Media"
+            labelPosition="right"
+            icon="cloud upload"
+          />
+          <FileModal
+            modal={modal}
+            closeModal={this.closeModal}
+            uploadFile={this.uploadFile}
+          />
+        </Button.Group>
+      </Segment>
+    );
+  }
+}
 
 export default MessageForm;
