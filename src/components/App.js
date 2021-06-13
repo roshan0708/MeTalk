@@ -12,6 +12,9 @@ import MetaPanel from "./MetaPanel/MetaPanel";
 const App = () => {
   const currentUser = useSelector((state) => state.user.currentUser);
   const currentChannel = useSelector((state) => state.channel.currentChannel);
+  const isPrivateChannel = useSelector(
+    (state) => state.channel.isPrivateChannel
+  );
 
   return (
     <Grid columns="equal" className="app" style={{ background: "#eee" }}>
@@ -25,6 +28,7 @@ const App = () => {
           key={currentChannel && currentChannel.id}
           currentChannel={currentChannel}
           currentUser={currentUser}
+          isPrivateChannel={isPrivateChannel}
         />
       </Grid.Column>
       <Grid.Column width={4}>
