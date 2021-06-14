@@ -1,3 +1,3 @@
-# Slack Clone using React-Redux-Firebase
+# MeTalk - A realtime chat application using React, Redux and Firebase🚀
 
 Work under progress!
