@@ -16,6 +16,8 @@ const App = () => {
     (state) => state.channel.isPrivateChannel
   );
 
+  const userPosts = useSelector((state) => state.channel.userPosts);
+
   return (
     <Grid columns="equal" className="app" style={{ background: "#eee" }}>
       <ColorPanel />
@@ -34,7 +36,9 @@ const App = () => {
       <Grid.Column width={4}>
         <MetaPanel
           key={currentChannel && currentChannel.id}
+          currentChannel={currentChannel}
           isPrivateChannel={isPrivateChannel}
+          userPosts={userPosts}
         />
       </Grid.Column>
     </Grid>
